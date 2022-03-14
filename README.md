@@ -22,9 +22,9 @@ This is implemented mainly based on [Pytorch Geometric](https://github.com/rusty
 We will update LT and Natural versions.
 
 ## Dependencies
-- Python $\geq$ 3.6
-- Pytorch $\geq$ 1.7
-- Pytorch Geometric $\geq$ 1.6
+- Python >= 3.6
+- Pytorch >= 1.7
+- Pytorch Geometric >= 1.6
 
 ## Citation
 ```
