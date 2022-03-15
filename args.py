@@ -4,7 +4,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     # Dataset
-    parser.add_argument('--dataset', type=str, default='CiteSeer',
+    parser.add_argument('--dataset', type=str, default='Cora',
                         help='Dataset Name')
     parser.add_argument('--imb_ratio', type=float, default=10,
                         help='Imbalance Ratio')
@@ -25,11 +25,11 @@ def parse_args():
     parser.add_argument('--ens', action='store_true',
                         help='Mixing node')
     # Hyperparameter for our approach
-    parser.add_argument('--keep_prob', type=float, default=0.05,
+    parser.add_argument('--keep_prob', type=float, default=0.01,
                         help='Keeping Probability')
     parser.add_argument('--pred_temp', type=float, default=2,
                         help='Prediction temperature')
-    parser.add_argument('--warmup', type=int, default=5,
+    parser.add_argument('--warmup', type=int, default=1,
                         help='warmup')
     args = parser.parse_args()
 
