@@ -15,20 +15,25 @@ This is implemented mainly based on [Pytorch Geometric](https://github.com/rusty
 
 - Running command:
   ```
-  python main_semi.py --ens --dataset [dataset] --net [net]
+  python main_semi.py --ens --dataset [dataset] --net [net] --keep_prob [keep_prob] --pred_temp [pred_temp]
   ```
   1. Experiment Dataset (the dataset will be downloaded automatically at the first running time):\
        Set [dataset] as one of ['Cora', 'Citeseer', 'PubMed']
   2. Backbone GNN architecture:\
        Set [net] as one of ['GCN', 'GAT', 'SAGE']
+  3. Feature masking hyperparameter $k$:\
+       Set [keep_prob] as one of [0.01, 0.05]
+  4. Temperature $\tau$:\
+       Set [pred_temp] as one of [1, 2]
 
 We will update LT datasets and co-purchasing network datasets.
 
 ## Dependencies
-- Python >= 3.6
-- Pytorch >= 1.7
-- Pytorch Geometric >= 1.6
-- torch_scatter >= 2.0
+This code has been tested with 
+- Python == 3.6.10
+- Pytorch == 1.7.0
+- Pytorch Geometric == 1.6.2
+- torch_scatter == 2.0.5
 
 ## Citation
 ```
