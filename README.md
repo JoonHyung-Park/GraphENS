@@ -4,7 +4,7 @@
 
 Official Pytorch implementation of ICLR 2022 paper "[GraphENS: Neighbor-Aware Ego Network Synthesis for Class-Imbalanced Node Classification](https://openreview.net/forum?id=MXEl7i-iru)"
 
-![Overview Figure](figures/Conceptfig.PNG)
+![Overview Figure](figures/Conceptfig.png)
 This work investigates node & neighbor memorization problem in class-imbalanced node classification.
 To mitigate the memorization problem, we propose GraphENS, which synthesizes ego networks to construct a balanced graph by mixing node features and neighbor distributions of two nodes.
 
