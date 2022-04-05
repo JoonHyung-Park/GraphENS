@@ -21,9 +21,9 @@ This is implemented mainly based on [Pytorch Geometric](https://github.com/rusty
        Set [dataset] as one of ['Cora', 'Citeseer', 'PubMed']
   2. Backbone GNN architecture:\
        Set [net] as one of ['GCN', 'GAT', 'SAGE']
-  3. Feature masking hyperparameter $k$:\
+  3. Feature masking hyperparameter ***k***:\
        Set [keep_prob] as one of [0.01, 0.05]
-  4. Temperature $\tau$:\
+  4. Temperature 𝞽:\
        Set [pred_temp] as one of [1, 2]
 
 We will update LT datasets and co-purchasing network datasets.
