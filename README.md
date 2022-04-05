@@ -15,15 +15,25 @@ This is implemented mainly based on [Pytorch Geometric](https://github.com/rusty
 
 - Running command:
   ```
-  python main_semi.py --ens --dataset [dataset] --net [net] --keep_prob [keep_prob] --pred_temp [pred_temp]
+  python main_semi.py --ens \
+  --dataset [dataset] \
+  --net [net] \
+  --n_layer [n_layer] \
+  --feat_dim [feat_dim] \
+  --keep_prob [keep_prob] \
+  --pred_temp [pred_temp]
   ```
   1. Experiment Dataset (the dataset will be downloaded automatically at the first running time):\
        Set [dataset] as one of ['Cora', 'Citeseer', 'PubMed']
   2. Backbone GNN architecture:\
        Set [net] as one of ['GCN', 'GAT', 'SAGE']
-  3. Feature masking hyperparameter ***k***:\
+  3. The number of layer for GNN:\
+       Set [n_layer] as one of [1, 2, 3]
+  5. Hidden dimension for GNN:\
+       Set [feat_dim] as one of [64, 128, 256]
+  7. Feature masking hyperparameter ***k***:\
        Set [keep_prob] as one of [0.01, 0.05]
-  4. Temperature 𝞽:\
+  6. Temperature 𝞽:\
        Set [pred_temp] as one of [1, 2]
 
 We will update LT datasets and co-purchasing network datasets.
