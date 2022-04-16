@@ -2,9 +2,9 @@
 
 ## Introduction
 
-Code for ICLR 2022 paper "[GraphENS: Neighbor-Aware Ego Network Synthesis for Class-Imbalanced Node Classification](https://openreview.net/forum?id=MXEl7i-iru)"
+Official Pytorch implementation of ICLR 2022 paper "[GraphENS: Neighbor-Aware Ego Network Synthesis for Class-Imbalanced Node Classification](https://openreview.net/forum?id=MXEl7i-iru)"
 
-![Overview Figure](figures/Conceptfig.PNG)
+![Overview Figure](figures/Conceptfig.png)
 This work investigates node & neighbor memorization problem in class-imbalanced node classification.
 To mitigate the memorization problem, we propose GraphENS, which synthesizes ego networks to construct a balanced graph by mixing node features and neighbor distributions of two nodes.
 
@@ -13,18 +13,37 @@ To mitigate the memorization problem, we propose GraphENS, which synthesizes ego
 The code for semi-supervised node classification. 
 This is implemented mainly based on [Pytorch Geometric](https://github.com/rusty1s/pytorch_geometric).
 
-- Running command: 'python main_semi.py --ens'
+- Running command:
+  ```
+  python main_semi.py --ens \
+  --dataset [dataset] \
+  --net [net] \
+  --n_layer [n_layer] \
+  --feat_dim [feat_dim] \
+  --keep_prob [keep_prob] \
+  --pred_temp [pred_temp]
+  ```
   1. Experiment Dataset (the dataset will be downloaded automatically at the first running time):\
-       set dataset = ['Cora', 'Citeseer', 'PubMed']
-  2. Backbone GNN':\
-       set net = ['GCN', 'GAT', 'SAGE']
+       Set [dataset] as one of ['Cora', 'Citeseer', 'PubMed']
+  2. Backbone GNN architecture:\
+       Set [net] as one of ['GCN', 'GAT', 'SAGE']
+  3. The number of layer for GNN:\
+       Set [n_layer] as one of [1, 2, 3]
+  5. Hidden dimension for GNN:\
+       Set [feat_dim] as one of [64, 128, 256]
+  7. Feature masking hyperparameter ***k***:\
+       Set [keep_prob] as one of [0.01, 0.05]
+  6. Temperature 𝞽:\
+       Set [pred_temp] as one of [1, 2]
 
-We will update LT and Natural versions.
+We will update LT datasets and co-purchasing network datasets.
 
 ## Dependencies
-- Python >= 3.6
-- Pytorch >= 1.7
-- Pytorch Geometric >= 1.6
+This code has been tested with 
+- Python == 3.6.10
+- Pytorch == 1.7.0
+- Pytorch Geometric == 1.6.2
+- torch_scatter == 2.0.5
 
 ## Citation
 ```
