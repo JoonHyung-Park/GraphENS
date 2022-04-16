@@ -9,20 +9,19 @@ from torch_geometric.utils import add_self_loops, degree
 
 
 @torch.no_grad()
-def get_ins_neighbor_dist(label, edge_index, n_cls, train_mask, device):
+def get_ins_neighbor_dist(num_nodes, edge_index, train_mask, device):
     """
     Compute adjacent node distribution.
     """
     ## Utilize GPU ##
     train_mask = train_mask.clone().to(device)
-    label = label.clone().to(device)
     edge_index = edge_index.clone().to(device)
     row, col = edge_index[0], edge_index[1]
 
     # Compute neighbor distribution
     neighbor_dist_list = []
-    for j in range(len(label)):
-        neighbor_dist = torch.zeros_like(label, dtype=torch.float32)
+    for j in range(num_nodes):
+        neighbor_dist = torch.zeros(num_nodes, dtype=torch.float32).to(device)
 
         idx = row[(col==j)]
         neighbor_dist[idx] = neighbor_dist[idx] + 1
@@ -124,7 +123,7 @@ def duplicate_neighbor(total_node, edge_index, sampling_src_idx):
     row, col = edge_index[0], edge_index[1]
     row, sort_idx = torch.sort(row)
     col = col[sort_idx]
-    degree = scatter_add(torch.ones_like(row), row)
+    degree = scatter_add(torch.ones_like(col), col)
     new_row =(torch.arange(len(sampling_src_idx)).to(device)+ total_node).repeat_interleave(degree[sampling_src_idx])
     temp = scatter_add(torch.ones_like(sampling_src_idx), sampling_src_idx).to(device)
 
@@ -162,7 +161,7 @@ def get_dist_kl(prev_out, sampling_src_idx, sampling_dst_idx):
 
 @torch.no_grad()
 def neighbor_sampling(total_node, edge_index, sampling_src_idx, sampling_dst_idx,
-        neighbor_dist_list, prev_out):
+        neighbor_dist_list, prev_out, train_node_mask=None):
     """
     Neighbor Sampling - Mix adjacent node distribution and samples neighbors from it
     Input:
@@ -172,6 +171,7 @@ def neighbor_sampling(total_node, edge_index, sampling_src_idx, sampling_dst_idx
         sampling_dst_idx:   Target node index for augmented nodes; [# of augmented nodes]
         neighbor_dist_list: Adjacent node distribution of whole nodes; [# of nodes, # of nodes]
         prev_out:           Model prediction of the previous step; [# of nodes, n_cls]
+        train_node_mask:    Mask for not removed nodes; [# of nodes]
     Output:
         new_edge_index:     original edge index + sampled edge index
         dist_kl:            kl divergence of target nodes from source nodes; [# of sampling nodes, 1]
@@ -184,7 +184,6 @@ def neighbor_sampling(total_node, edge_index, sampling_src_idx, sampling_dst_idx
     # Find the nearest nodes and mix target pool
     if prev_out is not None:
         sampling_dst_idx = sampling_dst_idx.clone().to(device)
-        node_info = torch.clamp(torch.log(prev_out), min=-100, max=0)
         dist_kl = get_dist_kl(prev_out, sampling_src_idx, sampling_dst_idx)
         ratio = F.softmax(torch.cat([dist_kl.new_zeros(dist_kl.size(0),1), -dist_kl], dim=1), dim=1)
         mixed_neighbor_dist = ratio[:,:1] * neighbor_dist_list[sampling_src_idx]
@@ -194,11 +193,13 @@ def neighbor_sampling(total_node, edge_index, sampling_src_idx, sampling_dst_idx
         mixed_neighbor_dist = neighbor_dist_list[sampling_src_idx]
 
     # Compute degree
-    row = edge_index[0]
-    degree = scatter_add(torch.ones_like(row), row)
+    col = edge_index[1]
+    degree = scatter_add(torch.ones_like(col), col)
     if len(degree) < total_node:
         degree = torch.cat([degree, degree.new_zeros(total_node-len(degree))],dim=0)
-    degree_dist = scatter_add(torch.ones_like(degree), degree).to(device).type(torch.float32)
+    if train_node_mask is None:
+        train_node_mask = torch.ones_like(degree,dtype=torch.bool)
+    degree_dist = scatter_add(torch.ones_like(degree[train_node_mask]), degree[train_node_mask]).to(device).type(torch.float32)
 
     # Sample degree for augmented nodes
     prob = degree_dist.unsqueeze(dim=0).repeat(len(sampling_src_idx),1)

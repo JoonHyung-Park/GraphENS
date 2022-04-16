@@ -18,12 +18,12 @@ args = parse_args()
 
 ## Handling exception from arguments ##
 assert not (args.warmup < 1 and args.ens)
-assert args.imb_ratio > 1
+assert args.imb_ratio == 100
 
 ## Load Dataset ##
 dataset = args.dataset
 path = osp.join(osp.dirname(osp.realpath(__file__)), 'data', dataset)
-dataset = get_dataset(dataset, path, split_type='public')
+dataset = get_dataset(dataset, path, split_type='full')
 data = dataset[0]
 n_cls = data.y.max().item() + 1
 data = data.to(device)
@@ -36,7 +36,7 @@ def backward_hook(module, grad_input, grad_output):
 
 def train():
     global class_num_list, idx_info, prev_out, aggregator
-    global data_train_mask, data_val_mask, data_test_mask
+    global data_train_mask, data_val_mask, data_test_mask, train_node_mask, train_edge_mask
 
     model.train()
     optimizer.zero_grad()
@@ -44,7 +44,7 @@ def train():
     if args.ens:
         # Hook saliency map of input features
         model.conv1[0].temp_weight.register_backward_hook(backward_hook)
-        
+
         # Sampling source and destination nodes
         sampling_src_idx, sampling_dst_idx = sampling_idx_individual_dst(class_num_list, idx_info, device)
         beta = torch.distributions.beta.Beta(2, 2)
@@ -54,16 +54,16 @@ def train():
         # Augment nodes
         if epoch > args.warmup:
             with torch.no_grad():
-                prev_out = aggregator(prev_out, data.edge_index)
+                prev_out = aggregator(prev_out, data.edge_index[:,train_edge_mask])
                 prev_out = F.softmax(prev_out / args.pred_temp, dim=1).detach().clone()
-            new_edge_index, dist_kl = neighbor_sampling(data.x.size(0), data.edge_index, sampling_src_idx, sampling_dst_idx,
-                                        neighbor_dist_list, prev_out)
+            new_edge_index, dist_kl = neighbor_sampling(data.x.size(0), data.edge_index[:,train_edge_mask], sampling_src_idx, sampling_dst_idx,
+                                        neighbor_dist_list, prev_out, train_node_mask)
             new_x = saliency_mixup(data.x, sampling_src_idx, sampling_dst_idx, lam, ori_saliency, dist_kl = dist_kl, keep_prob=args.keep_prob)
         else:
-            new_edge_index = duplicate_neighbor(data.x.size(0), data.edge_index, sampling_src_idx)
+            new_edge_index = duplicate_neighbor(data.x.size(0), data.edge_index[:,train_edge_mask], sampling_src_idx)
             dist_kl, ori_saliency = None, None
             new_x = saliency_mixup(data.x, sampling_src_idx, sampling_dst_idx, lam, ori_saliency, dist_kl = dist_kl)
-        new_x.requires_grad = True           
+        new_x.requires_grad = True
 
         # Get predictions
         output = model(new_x, new_edge_index, None)
@@ -82,12 +82,12 @@ def train():
         criterion(output[new_train_mask], new_y).backward()
 
     else: ## Vanilla Train ##
-        output = model(data.x, data.edge_index, None)
+        output = model(data.x, data.edge_index[:,train_edge_mask], None)
         criterion(output[data_train_mask], data.y[data_train_mask]).backward()
 
     with torch.no_grad():
         model.eval()
-        output = model(data.x, data.edge_index, None)
+        output = model(data.x, data.edge_index[:,train_edge_mask], None)
         val_loss= F.cross_entropy(output[data_val_mask], data.y[data_val_mask])
 
     optimizer.step()
@@ -97,7 +97,7 @@ def train():
 @torch.no_grad()
 def test():
     model.eval()
-    logits = model(data.x, data.edge_index, None,)
+    logits = model(data.x, data.edge_index[:,train_edge_mask], None,)
     accs, baccs, f1s = [], [], []
 
     for i, mask in enumerate([data_train_mask, data_val_mask, data_test_mask]):
@@ -142,36 +142,16 @@ for r in range(repeatition):
     for i in range(n_cls):
         data_num = (stats == i).sum()
         n_data.append(int(data_num.item()))
-
-    # Load data
-    if args.dataset == 'Cora':
-        class_sample_num = 20
-        imb_class_num = 3
-    elif args.dataset == 'CiteSeer':
-        class_sample_num = 20
-        imb_class_num = 3
-    elif args.dataset == 'PubMed':
-        class_sample_num = 20
-        imb_class_num = 2
-    else:
-        print("no this dataset: {args.dataset}")
-
     idx_info = get_idx_info(data.y, n_cls, data_train_mask)
+    class_num_list = n_data
 
-    #for artificial imbalanced setting: only the last imb_class_num classes are imbalanced
-    class_num_list = []
-    for i in range(n_cls):
-        if args.imb_ratio > 1 and i > n_cls-1-imb_class_num: #only imbalance the last classes
-            class_num_list.append(int(class_sample_num*(1./args.imb_ratio)))
-        else:
-            class_num_list.append(class_sample_num)
-
-    if args.imb_ratio > 1:
-        data_train_mask, idx_info = split_semi_dataset(len(data.x), n_data, n_cls, class_num_list, idx_info, data.x.device)
+    ## Construct a long-tailed graph ##
+    class_num_list, data_train_mask, idx_info, train_node_mask, train_edge_mask = make_longtailed_data_remove(data.edge_index, \
+                                                                data.y, n_data, n_cls, args.imb_ratio, data_train_mask.clone())
 
     ## Adjacent node distribution ##
     if args.ens:
-        neighbor_dist_list = get_ins_neighbor_dist(data.y.size(0), data.edge_index, data_train_mask, device)
+        neighbor_dist_list = get_ins_neighbor_dist(data.y.size(0), data.edge_index[:,train_edge_mask], data_train_mask, device)
     else:
         neighbor_dist_list = None
 
