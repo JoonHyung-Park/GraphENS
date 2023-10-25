@@ -1,5 +1,5 @@
 # GraphENS: Neighbor-Aware Ego Network Synthesis for Class-Imbalanced Node Classification
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10040243.svg)](https://doi.org/10.5281/zenodo.10040243)
 ## Introduction
 
 Official Pytorch implementation of ICLR 2022 paper "[GraphENS: Neighbor-Aware Ego Network Synthesis for Class-Imbalanced Node Classification](https://openreview.net/forum?id=MXEl7i-iru)"
